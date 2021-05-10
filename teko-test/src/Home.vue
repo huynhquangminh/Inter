@@ -5,14 +5,20 @@
             <span class="home_header__name">Mathew Computer</span>
         </div>
         <div class="home_content">
-            <div class="home_content__search">tìm kiếm</div>
+            <div class="home_content__search">
+                <v-text-field
+                    v-model="keySearch"
+                    solo
+                    label="Search with name product"
+                    clearable
+                    v-on:keyup="resultQuery" 
+                ></v-text-field>
+            </div>
             <div class="home_content__list" v-if="listProduct.length">
                  <div class="home_content__listItem" v-for=" (item, index) of listProduct" :key="index">
-                     <!-- <div style="border: 1px solid;">
-                         <img :src="item.imageUrl" width="200" alt=""><br>
-                     </div> -->
                     <img :src="item.imageUrl" width="200" alt=""> <br>
-                    <span class="home_content__listItem-name">{{item.name}}</span> <br>
+                    <span class="home_content__listItem-name" v-html="item.name"></span> <br>
+                    <!-- <span class="home_content__listItem-name" v-html="test"></span> <br> -->
                     <span class="home_content__listItem-price">${{item.price}}</span>
                  </div>
             </div>
@@ -35,14 +41,16 @@ export default {
             pageNum: 1,
             countPage: 0,
             listData: [],
-            listProduct: []
+            listProduct: [],
+            keySearch: '',
+            listDataSearch: [],
+            test: 'fasdfasdfs <span class="home_content__listItem-highlight">text</span> àdasdfasdfasdf'
         }
     },
     mounted () {
         this.getListData().then(res => {
            if (res.data) {
                this.listData = res.data
-               this.countPage = Math.ceil(res.data.length / 20)
                this.getListProduct(this.listData, this.pageNum)
            }
         })
@@ -52,17 +60,35 @@ export default {
             return axios.get('https://run.mocky.io/v3/7af6f34b-b206-4bed-b447-559fda148ca5');
         },
         getListProduct (data, pageNext) {
+            this.countPage = Math.ceil(data.length / 20)
             this.listProduct = []
             let arrTamp = new Array(...data);
             console.log((pageNext-1)*20, pageNext*20)
             this.listProduct = arrTamp.slice( (pageNext-1)*20, pageNext*20)
             console.log('listProduct', this.listProduct)
+        },
+        resultQuery (e) {
+            if (e.keyCode === 13) {
+                this.listDataSearch = []
+                if(this.keySearch){
+                this.listDataSearch = this.listData.filter((item)=>{
+                       return this.keySearch.toLowerCase().split(' ').every(v => item.name.toLowerCase().includes(v))
+                    })
+                this.getListProduct(this.listDataSearch, 1)
+                } else {
+                    this.getListProduct(this.listData, 1)
+                }
+            }
         }
-        
     },
     watch: {
         pageNum (newValue) {
-            this.getListProduct(this.listData, newValue)
+            if (!this.keySearch) {
+                this.getListProduct(this.listData, newValue)
+            } else {
+                 this.getListProduct(this.listDataSearch, newValue)
+            }
+            
         }
     }
 }
@@ -108,6 +134,9 @@ export default {
                 &-price {
                     font-size: 16px;
                     color: red;
+                }
+                &-highlight {
+                    background-color: red;
                 }
             }
         }
