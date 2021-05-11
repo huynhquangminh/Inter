@@ -10,15 +10,13 @@
                     v-model="keySearch"
                     solo
                     label="Search with name product"
-                    clearable
-                    v-on:keyup="resultQuery" 
+                    v-on:keyup="resultQuery()" 
                 ></v-text-field>
             </div>
             <div class="home_content__list" v-if="listProduct.length">
                  <div class="home_content__listItem" v-for=" (item, index) of listProduct" :key="index">
-                    <img :src="item.imageUrl" width="200" alt=""> <br>
+                    <img :src="item.imageUrl" width="200" height="200" alt=""> <br>
                     <span class="home_content__listItem-name" v-html="item.name"></span> <br>
-                    <!-- <span class="home_content__listItem-name" v-html="test"></span> <br> -->
                     <span class="home_content__listItem-price">${{item.price}}</span>
                  </div>
             </div>
@@ -34,6 +32,7 @@
 </template>
 <script>
 const axios = require('axios');
+import _ from 'lodash'
 export default {
     name: 'Home',
     data: function () {
@@ -43,8 +42,7 @@ export default {
             listData: [],
             listProduct: [],
             keySearch: '',
-            listDataSearch: [],
-            test: 'fasdfasdfs <span class="home_content__listItem-highlight">text</span> àdasdfasdfasdf'
+            listDataSearch: []
         }
     },
     mounted () {
@@ -62,15 +60,26 @@ export default {
         getListProduct (data, pageNext) {
             this.countPage = Math.ceil(data.length / 20)
             this.listProduct = []
-            let arrTamp = new Array(...data);
-            console.log((pageNext-1)*20, pageNext*20)
-            this.listProduct = arrTamp.slice( (pageNext-1)*20, pageNext*20)
-            console.log('listProduct', this.listProduct)
+            let listTamp =  []
+            let arrTamp = _.cloneDeep(data)
+            listTamp = arrTamp.slice( (pageNext-1)*20, pageNext*20)
+            if (this.countPage && this.keySearch != '') {
+                this.keySearch.toLowerCase().split(' ').forEach(item => {
+                    listTamp.forEach(el => {
+                        let regEx = new RegExp(item, "ig");
+                        el.name = el.name.replace(regEx ,'<b>'  + item + '</b>')
+                        this.listProduct.push(el)
+                    })
+                })
+            } else {
+               this.listProduct = listTamp
+            }
         },
-        resultQuery (e) {
-            if (e.keyCode === 13) {
+        resultQuery () {
+            _.debounce(() => {
                 this.listDataSearch = []
                 if(this.keySearch){
+                this.keySearch = this.keySearch.replaceAll("\\s\\s+", " ").trim()
                 this.listDataSearch = this.listData.filter((item)=>{
                        return this.keySearch.toLowerCase().split(' ').every(v => item.name.toLowerCase().includes(v))
                     })
@@ -78,7 +87,7 @@ export default {
                 } else {
                     this.getListProduct(this.listData, 1)
                 }
-            }
+            }, 3000).call()
         }
     },
     watch: {
@@ -129,7 +138,7 @@ export default {
                 }
                 &-name {
                     font-size: 16px;
-                    font-weight: bold;
+                    // font-weight: bold;
                 }
                 &-price {
                     font-size: 16px;
@@ -139,6 +148,12 @@ export default {
                     background-color: red;
                 }
             }
+        }
+        &__search {
+            width: 50%;
+            margin: auto;
+            padding-top: 20px;
+            padding-bottom: 50px;
         }
     }
 }
